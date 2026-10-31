@@ -4,7 +4,7 @@
 import { Canvas } from "@react-three/fiber";
 import { Suspense } from "react";
 import * as THREE from "three";
-
+import Player3D from "./Player3D";
 function Tree({
   position,
   scale = 1
@@ -308,6 +308,9 @@ function PlazaScene() {
         <meshStandardMaterial color="#e8c5a4" />
       </mesh>
 
+            {/* Avatar e sistema inicial de movimentação */}
+      <Player3D />
+      {/* Grade de referência do mundo */}
       <gridHelper
         args={[22, 22, "#91b68d", "#91b68d"]}
         position={[0, 0.025, 0]}
