@@ -327,7 +327,7 @@ function AvatarModel({ walkingRef }: AvatarModelProps) {
     const walking = walkingRef.current;
     const phase = state.clock.elapsedTime * 9;
     const swing = walking ? Math.sin(phase) * 0.42 : 0;
-    const armSwing = walking ? Math.sin(phase) * 0.28 : 0;
+    const armSwing = walking ? Math.sin(phase) * 0.12 : 0;
 
     bones.leftLeg.forEach((bone) => {
       const original = originalRotations.get(bone);
