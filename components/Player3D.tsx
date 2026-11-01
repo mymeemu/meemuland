@@ -9,11 +9,11 @@ export default function Player3D() {
   const { scene } = useGLTF("/stylized-cartoon-3d.glb");
 
   useEffect(() => {
-    // Definimos a paleta de cores para o avatar
-    const skinMaterial = new THREE.MeshStandardMaterial({ color: "#e0ac69", roughness: 0.6 }); // Cor de pele
-    const shirtMaterial = new THREE.MeshStandardMaterial({ color: "#7668e8", roughness: 0.4 }); // Camisa (roxa do MEEMU)
-    const pantsMaterial = new THREE.MeshStandardMaterial({ color: "#2d3748", roughness: 0.7 }); // Calça jeans escura
-    const accessoryMaterial = new THREE.MeshStandardMaterial({ color: "#111111", roughness: 0.3 }); // Relógio/Acessórios
+    // Paleta de cores para o avatar
+    const skinMaterial = new THREE.MeshStandardMaterial({ color: "#e0ac69", roughness: 0.6 });
+    const shirtMaterial = new THREE.MeshStandardMaterial({ color: "#7668e8", roughness: 0.4 });
+    const pantsMaterial = new THREE.MeshStandardMaterial({ color: "#2d3748", roughness: 0.7 });
+    const accessoryMaterial = new THREE.MeshStandardMaterial({ color: "#111111", roughness: 0.3 });
 
     scene.traverse((child) => {
       if ((child as THREE.Mesh).isMesh) {
@@ -23,7 +23,6 @@ export default function Player3D() {
 
         const name = mesh.name.toUpperCase();
 
-        // Pinta cada parte de acordo com o nome da malha no GLTF
         if (name.includes("HEAD") || name.includes("HAND") || name.includes("ARM")) {
           mesh.material = skinMaterial;
         } else if (name.includes("TOSO") || name.includes("TORSO")) {
@@ -36,7 +35,6 @@ export default function Player3D() {
       }
     });
 
-    // Baixa ligeiramente os braços para sair da pose em T pura
     const leftArm = scene.getObjectByName("l arm.");
     const rightArm = scene.getObjectByName("R ARM");
     if (leftArm) leftArm.rotation.z = -0.5;
@@ -45,8 +43,8 @@ export default function Player3D() {
   }, [scene]);
 
   return (
-    <group ref={group} position={[0, 0.05, 3]}>
-      {/* Ajuste o scale se ele estiver muito grande/pequeno */}
+    /* AUMENTAMOS AQUI: mude o 0.05 para 1.0 ou 1.25 para ele subir */
+    <group ref={group} position={[0, 1.1, 3]}>
       <primitive object={scene} scale={1} />
     </group>
   );
