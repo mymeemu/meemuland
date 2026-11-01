@@ -1,11 +1,40 @@
-
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import React, { useMemo, useRef, useState, useEffect } from "react";
 import { useFrame } from "@react-three/fiber";
-import { useGLTF } from "@react-three/drei";
-import { clone } from "three/examples/jsm/utils/SkeletonUtils.js";
 import * as THREE from "three";
+
+/* -------------------------------------------------------
+   SISTEMA DE CONFIGURAÇÃO E CUSTOMIZAÇÃO DO AVATAR
+------------------------------------------------------- */
+
+export type AvatarConfig = {
+  skinColor: string;
+  hairStyle: "short" | "long" | "spiky" | "afro";
+  hairColor: string;
+  eyeColor: string;
+  topStyle: "tshirt" | "hoodie" | "crop";
+  topColor: string;
+  bottomStyle: "shorts" | "pants";
+  bottomColor: string;
+  shoesColor: string;
+};
+
+const defaultConfig: AvatarConfig = {
+  skinColor: "#f5c6a5",
+  hairStyle: "long",
+  hairColor: "#4a2e1b",
+  eyeColor: "#2b1e1a",
+  topStyle: "tshirt",
+  topColor: "#3b82f6",
+  bottomStyle: "shorts",
+  bottomColor: "#ffffff",
+  shoesColor: "#1e293b",
+};
+
+/* -------------------------------------------------------
+   ESTRUTURA DO MAPA & PATHFINDING (A*)
+------------------------------------------------------- */
 
 const WORLD_LIMIT = 10.1;
 const CELL_SIZE = 0.4;
@@ -27,35 +56,22 @@ const trees: [number, number][] = [
 ];
 
 function isBlocked(x: number, z: number) {
-  if (
-    x < -WORLD_LIMIT ||
-    x > WORLD_LIMIT ||
-    z < -WORLD_LIMIT ||
-    z > WORLD_LIMIT
-  ) return true;
+  if (x < -WORLD_LIMIT || x > WORLD_LIMIT || z < -WORLD_LIMIT || z > WORLD_LIMIT) return true;
+  if (Math.hypot(x, z) < 2.35) return true; // Fonte
 
-  // Fonte central
-  if (Math.hypot(x, z) < 2.35) return true;
-
-  // Árvores
   for (const [treeX, treeZ] of trees) {
     if (Math.hypot(x - treeX, z - treeZ) < 0.48) return true;
   }
 
-  // Casas
   const houses = [
     { x: -5.5, z: -7.2, width: 4.55, depth: 3.95 },
     { x: 5.5, z: -7.2, width: 4.55, depth: 3.95 },
   ];
 
   for (const house of houses) {
-    if (
-      Math.abs(x - house.x) < house.width / 2 &&
-      Math.abs(z - house.z) < house.depth / 2
-    ) return true;
+    if (Math.abs(x - house.x) < house.width / 2 && Math.abs(z - house.z) < house.depth / 2) return true;
   }
 
-  // Bancos
   const benches = [
     { x: -4, z: 2.8, width: 0.85, depth: 1.95 },
     { x: 4, z: 2.8, width: 0.85, depth: 1.95 },
@@ -64,13 +80,9 @@ function isBlocked(x: number, z: number) {
   ];
 
   for (const bench of benches) {
-    if (
-      Math.abs(x - bench.x) < bench.width / 2 &&
-      Math.abs(z - bench.z) < bench.depth / 2
-    ) return true;
+    if (Math.abs(x - bench.x) < bench.width / 2 && Math.abs(z - bench.z) < bench.depth / 2) return true;
   }
 
-  // Decoração do gramado
   if (Math.hypot(x, z - 5.8) < 0.72) return true;
 
   return false;
@@ -84,44 +96,25 @@ function gridToWorld(value: number) {
   return value * CELL_SIZE - WORLD_LIMIT;
 }
 
-function findPath(
-  startX: number,
-  startZ: number,
-  endX: number,
-  endZ: number
-): THREE.Vector3[] {
-  const start = {
-    x: worldToGrid(startX),
-    z: worldToGrid(startZ),
-  };
+function findPath(startX: number, startZ: number, endX: number, endZ: number): THREE.Vector3[] {
+  const start = { x: worldToGrid(startX), z: worldToGrid(startZ) };
+  const end = { x: worldToGrid(endX), z: worldToGrid(endZ) };
 
-  const end = {
-    x: worldToGrid(endX),
-    z: worldToGrid(endZ),
-  };
-
-  const insideGrid = (x: number, z: number) =>
-    x >= 0 && z >= 0 && x < GRID_SIZE && z < GRID_SIZE;
-
-  const blocked = (x: number, z: number) =>
-    !insideGrid(x, z) || isBlocked(gridToWorld(x), gridToWorld(z));
+  const insideGrid = (x: number, z: number) => x >= 0 && z >= 0 && x < GRID_SIZE && z < GRID_SIZE;
+  const blocked = (x: number, z: number) => !insideGrid(x, z) || isBlocked(gridToWorld(x), gridToWorld(z));
 
   function findNearbyFree(origin: { x: number; z: number }, maxRadius: number) {
     if (!blocked(origin.x, origin.z)) return { ...origin };
-
     for (let radius = 1; radius <= maxRadius; radius++) {
       for (let dx = -radius; dx <= radius; dx++) {
         for (let dz = -radius; dz <= radius; dz++) {
           if (Math.max(Math.abs(dx), Math.abs(dz)) !== radius) continue;
-
           const x = origin.x + dx;
           const z = origin.z + dz;
-
           if (!blocked(x, z)) return { x, z };
         }
       }
     }
-
     return null;
   }
 
@@ -131,12 +124,10 @@ function findPath(
   if (!startPosition || !destination) return [];
 
   const key = (x: number, z: number) => `${x},${z}`;
-
   const heuristic = (x: number, z: number) => {
     const dx = Math.abs(destination.x - x);
     const dz = Math.abs(destination.z - z);
-    return Math.max(dx, dz) +
-      (Math.SQRT2 - 1) * Math.min(dx, dz);
+    return Math.max(dx, dz) + (Math.SQRT2 - 1) * Math.min(dx, dz);
   };
 
   const open: GridNode[] = [{
@@ -148,10 +139,8 @@ function findPath(
   }];
 
   const closed = new Set<string>();
-
   const directions = [
-    [-1, 0, 1], [1, 0, 1],
-    [0, -1, 1], [0, 1, 1],
+    [-1, 0, 1], [1, 0, 1], [0, -1, 1], [0, 1, 1],
     [-1, -1, Math.SQRT2], [-1, 1, Math.SQRT2],
     [1, -1, Math.SQRT2], [1, 1, Math.SQRT2],
   ];
@@ -162,7 +151,6 @@ function findPath(
   while (open.length > 0 && iterations < 12000) {
     iterations++;
     open.sort((a, b) => a.f - b.f);
-
     const current = open.shift()!;
 
     if (current.x === destination.x && current.z === destination.z) {
@@ -181,31 +169,16 @@ function findPath(
       if (blocked(nextX, nextZ)) continue;
       if (closed.has(key(nextX, nextZ))) continue;
 
-      // Não permite cortar caminho diagonalmente entre obstáculos.
-      if (
-        dx !== 0 &&
-        dz !== 0 &&
-        (
-          blocked(current.x + dx, current.z) ||
-          blocked(current.x, current.z + dz)
-        )
-      ) continue;
+      if (dx !== 0 && dz !== 0 && (blocked(current.x + dx, current.z) || blocked(current.x, current.z + dz))) continue;
 
       const nextG = current.g + cost;
-      const existing = open.find(
-        (node) => node.x === nextX && node.z === nextZ
-      );
+      const existing = open.find((node) => node.x === nextX && node.z === nextZ);
 
       if (existing && existing.g <= nextG) continue;
 
       const h = heuristic(nextX, nextZ);
       const nextNode: GridNode = {
-        x: nextX,
-        z: nextZ,
-        g: nextG,
-        h,
-        f: nextG + h,
-        parent: current,
+        x: nextX, z: nextZ, g: nextG, h, f: nextG + h, parent: current,
       };
 
       if (existing) Object.assign(existing, nextNode);
@@ -219,38 +192,23 @@ function findPath(
   let node: GridNode | null = finalNode;
 
   while (node) {
-    reversed.push(
-      new THREE.Vector3(
-        gridToWorld(node.x),
-        0.08,
-        gridToWorld(node.z)
-      )
-    );
+    reversed.push(new THREE.Vector3(gridToWorld(node.x), 0.08, gridToWorld(node.z)));
     node = node.parent;
   }
 
   reversed.reverse();
-
   if (reversed.length <= 2) return reversed;
 
   const simplified: THREE.Vector3[] = [reversed[0]];
-
   for (let i = 1; i < reversed.length - 1; i++) {
     const previous = reversed[i - 1];
     const current = reversed[i];
     const next = reversed[i + 1];
 
-    const directionA = new THREE.Vector2(
-      Math.sign(current.x - previous.x),
-      Math.sign(current.z - previous.z)
-    );
+    const dirA = new THREE.Vector2(Math.sign(current.x - previous.x), Math.sign(current.z - previous.z));
+    const dirB = new THREE.Vector2(Math.sign(next.x - current.x), Math.sign(next.z - current.z));
 
-    const directionB = new THREE.Vector2(
-      Math.sign(next.x - current.x),
-      Math.sign(next.z - current.z)
-    );
-
-    if (!directionA.equals(directionB)) simplified.push(current);
+    if (!dirA.equals(dirB)) simplified.push(current);
   }
 
   simplified.push(reversed[reversed.length - 1]);
@@ -258,111 +216,134 @@ function findPath(
 }
 
 /* -------------------------------------------------------
-   MODELO 3D E ESQUELETO
+   MODELO 3D PROCEDIMENTAL SUAVE (SEM ARQUIVOS GLB)
 ------------------------------------------------------- */
 
-type AvatarModelProps = {
+type ProceduralAvatarProps = {
+  config: AvatarConfig;
   walkingRef: React.MutableRefObject<boolean>;
 };
 
-function AvatarModel({ walkingRef }: AvatarModelProps) {
-  const { scene } = useGLTF("/avatar.3d.models.glb");
-
-  // Clona também a estrutura do esqueleto, evitando compartilhar
-  // bones diretamente com o modelo original armazenado em cache.
-  const avatar = useMemo(() => clone(scene), [scene]);
-
-  const bones = useMemo(() => {
-    const found: Record<string, THREE.Bone[]> = {
-      leftLeg: [],
-      rightLeg: [],
-      leftArm: [],
-      rightArm: [],
-    };
-
-    avatar.traverse((object) => {
-      if (!(object instanceof THREE.Bone)) return;
-
-      const name = object.name.toLowerCase().replace(/[^a-z]/g, "");
-
-      if (
-        name.includes("leftupleg") ||
-        name.includes("leftupperleg") ||
-        name.includes("leftthigh")
-      ) found.leftLeg.push(object);
-
-      if (
-        name.includes("rightupleg") ||
-        name.includes("rightupperleg") ||
-        name.includes("rightthigh")
-      ) found.rightLeg.push(object);
-
-      if (
-        name.includes("leftarm") &&
-        !name.includes("forearm") &&
-        !name.includes("hand")
-      ) found.leftArm.push(object);
-
-      if (
-        name.includes("rightarm") &&
-        !name.includes("forearm") &&
-        !name.includes("hand")
-      ) found.rightArm.push(object);
-    });
-
-    return found;
-  }, [avatar]);
-
-  const originalRotations = useMemo(() => {
-    const result = new Map<THREE.Bone, THREE.Euler>();
-
-    Object.values(bones).flat().forEach((bone) => {
-      result.set(bone, bone.rotation.clone());
-    });
-
-    return result;
-  }, [bones]);
+function ProceduralAvatar({ config, walkingRef }: ProceduralAvatarProps) {
+  const leftLegRef = useRef<THREE.Group>(null);
+  const rightLegRef = useRef<THREE.Group>(null);
+  const leftArmRef = useRef<THREE.Group>(null);
+  const rightArmRef = useRef<THREE.Group>(null);
 
   useFrame((state) => {
     const walking = walkingRef.current;
     const phase = state.clock.elapsedTime * 9;
-    const swing = walking ? Math.sin(phase) * 0.42 : 0;
-    const armSwing = walking ? Math.sin(phase) * 0.12 : 0;
+    const swing = walking ? Math.sin(phase) * 0.45 : 0;
+    const armSwing = walking ? Math.sin(phase) * 0.35 : 0;
 
-    bones.leftLeg.forEach((bone) => {
-      const original = originalRotations.get(bone);
-      if (original) bone.rotation.x = original.x + swing;
-    });
-
-    bones.rightLeg.forEach((bone) => {
-      const original = originalRotations.get(bone);
-      if (original) bone.rotation.x = original.x - swing;
-    });
-
-    bones.leftArm.forEach((bone) => {
-      const original = originalRotations.get(bone);
-      if (original) bone.rotation.x = original.x - armSwing;
-    });
-
-    bones.rightArm.forEach((bone) => {
-      const original = originalRotations.get(bone);
-      if (original) bone.rotation.x = original.x + armSwing;
-    });
+    if (leftLegRef.current) leftLegRef.current.rotation.x = swing;
+    if (rightLegRef.current) rightLegRef.current.rotation.x = -swing;
+    if (leftArmRef.current) leftArmRef.current.rotation.x = -armSwing;
+    if (rightArmRef.current) rightArmRef.current.rotation.x = armSwing;
   });
 
+  // Materiais suaves
+  const skinMat = useMemo(() => new THREE.MeshStandardMaterial({ color: config.skinColor, roughness: 0.4, flatShading: false }), [config.skinColor]);
+  const hairMat = useMemo(() => new THREE.MeshStandardMaterial({ color: config.hairColor, roughness: 0.6, flatShading: false }), [config.hairColor]);
+  const eyeMat = useMemo(() => new THREE.MeshStandardMaterial({ color: config.eyeColor, roughness: 0.2 }), [config.eyeColor]);
+  const topMat = useMemo(() => new THREE.MeshStandardMaterial({ color: config.topColor, roughness: 0.5, flatShading: false }), [config.topColor]);
+  const bottomMat = useMemo(() => new THREE.MeshStandardMaterial({ color: config.bottomColor, roughness: 0.5, flatShading: false }), [config.bottomColor]);
+  const shoeMat = useMemo(() => new THREE.MeshStandardMaterial({ color: config.shoesColor, roughness: 0.3 }), [config.shoesColor]);
+
   return (
-    <primitive
-      object={avatar}
-      scale={1}
-      position={[0, 0, 0]}
-    />
+    <group position={[0, 0.75, 0]}>
+      {/* CABEÇA ARREDONDADA */}
+      <mesh position={[0, 0.55, 0]} material={skinMat}>
+        <sphereGeometry args={[0.22, 32, 32]} />
+      </mesh>
+
+      {/* OLHOS */}
+      <mesh position={[-0.07, 0.58, 0.18]} material={eyeMat}>
+        <sphereGeometry args={[0.035, 16, 16]} />
+      </mesh>
+      <mesh position={[0.07, 0.58, 0.18]} material={eyeMat}>
+        <sphereGeometry args={[0.035, 16, 16]} />
+      </mesh>
+
+      {/* CABELO ANATÔMICO */}
+      {config.hairStyle === "long" && (
+        <group position={[0, 0.6, -0.02]}>
+          <mesh material={hairMat} position={[0, 0.05, 0]}>
+            <sphereGeometry args={[0.235, 32, 16, 0, Math.PI * 2, 0, Math.PI * 0.55]} />
+          </mesh>
+          <mesh material={hairMat} position={[-0.15, -0.2, 0.05]}>
+            <capsuleGeometry args={[0.06, 0.35, 16, 16]} />
+          </mesh>
+          <mesh material={hairMat} position={[0.15, -0.2, 0.05]}>
+            <capsuleGeometry args={[0.06, 0.35, 16, 16]} />
+          </mesh>
+        </group>
+      )}
+
+      {config.hairStyle === "short" && (
+        <mesh position={[0, 0.62, 0]} material={hairMat}>
+          <sphereGeometry args={[0.235, 32, 32, 0, Math.PI * 2, 0, Math.PI * 0.5]} />
+        </mesh>
+      )}
+
+      {/* TRONCO / ROUPA DE CIMA */}
+      <mesh position={[0, 0.15, 0]} material={topMat}>
+        <cylinderGeometry args={[0.16, 0.13, config.topStyle === "crop" ? 0.25 : 0.42, 32]} />
+      </mesh>
+
+      {/* BRAÇO ESQUERDO */}
+      <group ref={leftArmRef} position={[-0.22, 0.3, 0]}>
+        <mesh position={[0, -0.15, 0]} material={topMat}>
+          <capsuleGeometry args={[0.045, 0.28, 16, 16]} />
+        </mesh>
+        <mesh position={[0, -0.32, 0]} material={skinMat}>
+          <sphereGeometry args={[0.04, 16, 16]} />
+        </mesh>
+      </group>
+
+      {/* BRAÇO DIREITO */}
+      <group ref={rightArmRef} position={[0.22, 0.3, 0]}>
+        <mesh position={[0, -0.15, 0]} material={topMat}>
+          <capsuleGeometry args={[0.045, 0.28, 16, 16]} />
+        </mesh>
+        <mesh position={[0, -0.32, 0]} material={skinMat}>
+          <sphereGeometry args={[0.04, 16, 16]} />
+        </mesh>
+      </group>
+
+      {/* PERNA ESQUERDA */}
+      <group ref={leftLegRef} position={[-0.09, -0.1, 0]}>
+        <mesh position={[0, -0.18, 0]} material={bottomMat}>
+          <capsuleGeometry args={[0.055, config.bottomStyle === "pants" ? 0.42 : 0.2, 16, 16]} />
+        </mesh>
+        <mesh position={[0, -0.42, 0]} material={skinMat}>
+          <capsuleGeometry args={[0.048, 0.2, 16, 16]} />
+        </mesh>
+        {/* Sapato */}
+        <mesh position={[0, -0.55, 0.03]} material={shoeMat}>
+          <boxGeometry args={[0.09, 0.07, 0.15]} />
+        </mesh>
+      </group>
+
+      {/* PERNA DIREITA */}
+      <group ref={rightLegRef} position={[0.09, -0.1, 0]}>
+        <mesh position={[0, -0.18, 0]} material={bottomMat}>
+          <capsuleGeometry args={[0.055, config.bottomStyle === "pants" ? 0.42 : 0.2, 16, 16]} />
+        </mesh>
+        <mesh position={[0, -0.42, 0]} material={skinMat}>
+          <capsuleGeometry args={[0.048, 0.2, 16, 16]} />
+        </mesh>
+        {/* Sapato */}
+        <mesh position={[0, -0.55, 0.03]} material={shoeMat}>
+          <boxGeometry args={[0.09, 0.07, 0.15]} />
+        </mesh>
+      </group>
+    </group>
   );
 }
 
-useGLTF.preload("/avatar.3d.models.glb");
-
 /* -------------------------------------------------------
-   JOGADOR E MOVIMENTAÇÃO
+   JOGADOR E MOVIMENTAÇÃO NATIVA
 ------------------------------------------------------- */
 
 export default function Player3D() {
@@ -374,6 +355,19 @@ export default function Player3D() {
   const walkingRef = useRef(false);
 
   const [target, setTarget] = useState<[number, number, number] | null>(null);
+  const [avatarConfig, setAvatarConfig] = useState<AvatarConfig>(defaultConfig);
+
+  // Carrega configuração salva
+  useEffect(() => {
+    const saved = localStorage.getItem("meemu_avatar_config");
+    if (saved) {
+      try {
+        setAvatarConfig(JSON.parse(saved));
+      } catch (e) {
+        console.error("Erro ao carregar avatarConfig", e);
+      }
+    }
+  }, []);
 
   const direction = useRef(new THREE.Vector3());
   const speed = 2.8;
@@ -395,27 +389,14 @@ export default function Player3D() {
         walkingRef.current = true;
         direction.current.normalize();
 
-        player.position.addScaledVector(
-          direction.current,
-          Math.min(speed * delta, distance)
-        );
+        player.position.addScaledVector(direction.current, Math.min(speed * delta, distance));
 
-        const angle = Math.atan2(
-          direction.current.x,
-          direction.current.z
-        );
-
-        player.rotation.y = THREE.MathUtils.damp(
-          player.rotation.y,
-          angle,
-          9,
-          delta
-        );
+        const angle = Math.atan2(direction.current.x, direction.current.z);
+        player.rotation.y = THREE.MathUtils.damp(player.rotation.y, angle, 9, delta);
 
         if (bodyRef.current) {
           const walking = state.clock.elapsedTime * 9;
-          bodyRef.current.position.y =
-            Math.abs(Math.sin(walking * 2)) * 0.018;
+          bodyRef.current.position.y = Math.abs(Math.sin(walking * 2)) * 0.018;
         }
       } else {
         player.position.x = currentPoint.x;
@@ -432,19 +413,12 @@ export default function Player3D() {
       }
     } else {
       walkingRef.current = false;
-
-      if (bodyRef.current) {
-        bodyRef.current.position.y = 0;
-      }
+      if (bodyRef.current) bodyRef.current.position.y = 0;
     }
   });
 
-  function handleGroundClick(event: {
-    stopPropagation: () => void;
-    point: THREE.Vector3;
-  }) {
+  function handleGroundClick(event: { stopPropagation: () => void; point: THREE.Vector3 }) {
     event.stopPropagation();
-
     const point = event.point;
 
     const newPath = findPath(
@@ -460,29 +434,15 @@ export default function Player3D() {
     pathIndexRef.current = 0;
 
     const destination = newPath[newPath.length - 1];
-
-    setTarget([
-      destination.x,
-      0.075,
-      destination.z,
-    ]);
+    setTarget([destination.x, 0.075, destination.z]);
   }
 
   return (
     <>
       {/* Área clicável do chão */}
-      <mesh
-        rotation={[-Math.PI / 2, 0, 0]}
-        position={[0, 0.055, 0]}
-        onClick={handleGroundClick}
-      >
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.055, 0]} onClick={handleGroundClick}>
         <planeGeometry args={[21.5, 21.5]} />
-        <meshBasicMaterial
-          transparent
-          opacity={0}
-          depthWrite={false}
-          side={THREE.DoubleSide}
-        />
+        <meshBasicMaterial transparent opacity={0} depthWrite={false} side={THREE.DoubleSide} />
       </mesh>
 
       {/* Marcador de destino */}
@@ -492,22 +452,17 @@ export default function Player3D() {
             <ringGeometry args={[0.22, 0.29, 32]} />
             <meshBasicMaterial color="#635bff" />
           </mesh>
-
           <mesh rotation={[-Math.PI / 2, 0, 0]}>
             <ringGeometry args={[0.34, 0.37, 32]} />
-            <meshBasicMaterial
-              color="#a99cff"
-              transparent
-              opacity={0.45}
-            />
+            <meshBasicMaterial color="#a99cff" transparent opacity={0.45} />
           </mesh>
         </group>
       )}
 
-      {/* Jogador com modelo GLB */}
+      {/* Jogador Procedimental 3D */}
       <group ref={playerRef} position={[0, 0.08, 2]}>
         <group ref={bodyRef}>
-          <AvatarModel walkingRef={walkingRef} />
+          <ProceduralAvatar config={avatarConfig} walkingRef={walkingRef} />
         </group>
       </group>
     </>
