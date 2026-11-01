@@ -215,7 +215,7 @@ function findPath(startX: number, startZ: number, endX: number, endZ: number): T
   return simplified;
 }
 /* -------------------------------------------------------
-   MODELO 3D PROCEDIMENTAL - ESTILO MINIMUNDOS / URBANO
+   MODELO 3D PROCEDIMENTAL - ESTILO MINIMUNDOS / AJUSTADO
 ------------------------------------------------------- */
 
 type ProceduralAvatarProps = {
@@ -241,115 +241,95 @@ function ProceduralAvatar({ config, walkingRef }: ProceduralAvatarProps) {
     if (rightArmRef.current) rightArmRef.current.rotation.x = armSwing;
   });
 
-  // Materiais refinados
-  const skinMat = useMemo(() => new THREE.MeshStandardMaterial({ color: "#5c3826", roughness: 0.4 }), []); // Tom moreno/negro da referência
-  const hairMat = useMemo(() => new THREE.MeshStandardMaterial({ color: "#8b2500", roughness: 0.7 }), []); // Ruivo / Castanho avermelhado dos dreads
+  const skinMat = useMemo(() => new THREE.MeshStandardMaterial({ color: "#5c3826", roughness: 0.4 }), []);
+  const hairMat = useMemo(() => new THREE.MeshStandardMaterial({ color: "#8b2500", roughness: 0.7 }), []);
   const eyeMat = useMemo(() => new THREE.MeshStandardMaterial({ color: "#1a1a1a", roughness: 0.2 }), []);
   const glassesMat = useMemo(() => new THREE.MeshStandardMaterial({ color: "#e2e8f0", roughness: 0.1, metalness: 0.9, transparent: true, opacity: 0.8 }), []);
-  const topMat = useMemo(() => new THREE.MeshStandardMaterial({ color: config.topColor, roughness: 0.5 }), [config.topColor]);
-  const bottomMat = useMemo(() => new THREE.MeshStandardMaterial({ color: config.bottomColor, roughness: 0.5 }), [config.bottomColor]);
-  const shoeMat = useMemo(() => new THREE.MeshStandardMaterial({ color: config.shoesColor, roughness: 0.3 }), [config.shoesColor]);
+  const topMat = useMemo(() => new THREE.MeshStandardMaterial({ color: config.topColor, roughness: 0.5 }, [config.topColor]);
+  const bottomMat = useMemo(() => new THREE.MeshStandardMaterial({ color: config.bottomColor, roughness: 0.5 }, [config.bottomColor]);
+  const shoeMat = useMemo(() => new THREE.MeshStandardMaterial({ color: config.shoesColor, roughness: 0.3 }, []);
 
   return (
     <group position={[0, 0.65, 0]}>
-      {/* ================= ESTILO MINIMUNDOS (CABEÇA MAIOR E EXPRESSIVA) ================= */}
-      
-      {/* Cabeça Principal */}
-      <mesh position={[0, 0.6, 0]} material={skinMat}>
-        <sphereGeometry args={[0.26, 32, 32]} />
+      {/* CABEÇA */}
+      <mesh position={[0, 0.58, 0]} material={skinMat}>
+        <sphereGeometry args={[0.24, 32, 32]} />
       </mesh>
 
-      {/* Laterais raspadas (Degradê simulado) */}
-      <mesh position={[0, 0.58, 0]} material={hairMat}>
-        <cylinderGeometry args={[0.265, 0.265, 0.18, 32]} />
-      </mesh>
-
-      {/* Coque Volumoso com Dreads no Topo */}
-      <group position={[0, 0.82, -0.02]}>
+      {/* CABELO / COQUE VOLUMOSO DESLOCADO PARA TRÁS */}
+      <group position={[0, 0.72, -0.06]}>
         <mesh material={hairMat}>
-          <sphereGeometry args={[0.18, 16, 16]} />
+          <sphereGeometry args={[0.17, 16, 16]} />
         </mesh>
-        {/* Detalhes de tranças/dreads espalhados no coque */}
-        <mesh position={[0.05, 0.08, 0.05]} material={hairMat} rotation={[0.2, 0.3, 0]}>
-          <capsuleGeometry args={[0.04, 0.18, 8, 8]} />
+        {/* Dreads / Tranças caindo para trás */}
+        <mesh position={[0, 0.12, -0.04]} material={hairMat} rotation={[0.4, 0, 0]}>
+          <capsuleGeometry args={[0.04, 0.2, 8, 8]} />
         </mesh>
-        <mesh position={[-0.06, 0.06, -0.04]} material={hairMat} rotation={[-0.3, -0.2, 0]}>
-          <capsuleGeometry args={[0.04, 0.18, 8, 8]} />
+        <mesh position={[0.06, 0.08, -0.02]} material={hairMat} rotation={[0.2, 0.3, 0]}>
+          <capsuleGeometry args={[0.035, 0.18, 8, 8]} />
         </mesh>
-        <mesh position={[0.02, 0.1, -0.05]} material={hairMat} rotation={[-0.2, 0.4, 0]}>
-          <capsuleGeometry args={[0.035, 0.16, 8, 8]} />
+        <mesh position={[-0.06, 0.08, -0.02]} material={hairMat} rotation={[0.2, -0.3, 0]}>
+          <capsuleGeometry args={[0.035, 0.18, 8, 8]} />
         </mesh>
       </group>
 
-      {/* Óculos Estilosos (Baseados na Referência) */}
-      <group position={[0, 0.62, 0.2]}>
-        {/* Lente Esquerda */}
-        <mesh position={[-0.08, 0, 0]} material={glassesMat}>
-          <boxGeometry args={[0.07, 0.04, 0.02]} />
+      {/* ÓCULOS (Posicionados na frente da face, visíveis em rotação/diagonal) */}
+      <group position={[0, 0.58, 0.18]}>
+        <mesh position={[-0.07, 0, 0]} material={glassesMat}>
+          <boxGeometry args={[0.06, 0.035, 0.02]} />
         </mesh>
-        {/* Lente Direita */}
-        <mesh position={[0.08, 0, 0]} material={glassesMat}>
-          <boxGeometry args={[0.07, 0.04, 0.02]} />
+        <mesh position={[0.07, 0, 0]} material={glassesMat}>
+          <boxGeometry args={[0.06, 0.035, 0.02]} />
         </mesh>
-        {/* Ponte dos óculos */}
         <mesh position={[0, 0.01, 0]} material={glassesMat}>
-          <boxGeometry args={[0.05, 0.01, 0.01]} />
+          <boxGeometry args={[0.04, 0.008, 0.01]} />
         </mesh>
       </group>
 
-      {/* Olhos Expressivos */}
-      <mesh position={[-0.08, 0.59, 0.18]} material={eyeMat}>
-        <boxGeometry args={[0.04, 0.02, 0.02]} />
+      {/* OLHOS */}
+      <mesh position={[-0.07, 0.57, 0.17]} material={eyeMat}>
+        <boxGeometry args={[0.035, 0.018, 0.015]} />
       </mesh>
-      <mesh position={[0.08, 0.59, 0.18]} material={eyeMat}>
-        <boxGeometry args={[0.04, 0.02, 0.02]} />
-      </mesh>
-
-      {/* ================= CORPO COMPACTO (PROPORÇÃO CHIBI) ================= */}
-
-      {/* Pescoço */}
-      <mesh position={[0, 0.38, 0]} material={skinMat}>
-        <cylinderGeometry args={[0.06, 0.065, 0.08, 16]} />
+      <mesh position={[0.07, 0.57, 0.17]} material={eyeMat}>
+        <boxGeometry args={[0.035, 0.018, 0.015]} />
       </mesh>
 
-      {/* Tronco / Roupa */}
+      {/* CORPO / ROUPA COMPACTA */}
+      <mesh position={[0, 0.36, 0]} material={skinMat}>
+        <cylinderGeometry args={[0.05, 0.055, 0.07, 16]} />
+      </mesh>
+
       <mesh position={[0, 0.12, 0]} material={topMat}>
-        <cylinderGeometry args={[0.16, 0.13, 0.35, 32]} />
+        <cylinderGeometry args={[0.15, 0.12, 0.33, 32]} />
       </mesh>
 
-      {/* Braço Esquerdo */}
-      <group ref={leftArmRef} position={[-0.21, 0.25, 0]}>
-        <mesh position={[0, -0.12, 0]} material={topMat}>
+      {/* BRAÇOS */}
+      <group ref={leftArmRef} position={[-0.2, 0.24, 0]}>
+        <mesh position={[0, -0.11, 0]} material={topMat}>
+          <capsuleGeometry args={[0.04, 0.2, 16, 16]} />
+        </mesh>
+      </group>
+      <group ref={rightArmRef} position={[0.2, 0.24, 0]}>
+        <mesh position={[0, -0.11, 0]} material={topMat}>
+          <capsuleGeometry args={[0.04, 0.2, 16, 16]} />
+        </mesh>
+      </group>
+
+      {/* PERNAS */}
+      <group ref={leftLegRef} position={[-0.07, -0.1, 0]}>
+        <mesh position={[0, -0.14, 0]} material={bottomMat}>
           <capsuleGeometry args={[0.045, 0.22, 16, 16]} />
         </mesh>
+        <mesh position={[0, -0.3, 0.02]} material={shoeMat}>
+          <boxGeometry args={[0.08, 0.05, 0.14]} />
+        </mesh>
       </group>
-
-      {/* Braço Direito */}
-      <group ref={rightArmRef} position={[0.21, 0.25, 0]}>
-        <mesh position={[0, -0.12, 0]} material={topMat}>
+      <group ref={rightLegRef} position={[0.07, -0.1, 0]}>
+        <mesh position={[0, -0.14, 0]} material={bottomMat}>
           <capsuleGeometry args={[0.045, 0.22, 16, 16]} />
         </mesh>
-      </group>
-
-      {/* Perna Esquerda */}
-      <group ref={leftLegRef} position={[-0.08, -0.1, 0]}>
-        <mesh position={[0, -0.15, 0]} material={bottomMat}>
-          <capsuleGeometry args={[0.05, 0.25, 16, 16]} />
-        </mesh>
-        {/* Sapato */}
-        <mesh position={[0, -0.34, 0.02]} material={shoeMat}>
-          <boxGeometry args={[0.09, 0.06, 0.15]} />
-        </mesh>
-      </group>
-
-      {/* Perna Direita */}
-      <group ref={rightLegRef} position={[0.08, -0.1, 0]}>
-        <mesh position={[0, -0.15, 0]} material={bottomMat}>
-          <capsuleGeometry args={[0.05, 0.25, 16, 16]} />
-        </mesh>
-        {/* Sapato */}
-        <mesh position={[0, -0.34, 0.02]} material={shoeMat}>
-          <boxGeometry args={[0.09, 0.06, 0.15]} />
+        <mesh position={[0, -0.3, 0.02]} material={shoeMat}>
+          <boxGeometry args={[0.08, 0.05, 0.14]} />
         </mesh>
       </group>
     </group>
