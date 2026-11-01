@@ -76,7 +76,7 @@ function isBlocked(x: number, z: number) {
     { x: -4, z: 2.8, width: 0.85, depth: 1.95 },
     { x: 4, z: 2.8, width: 0.85, depth: 1.95 },
     { x: -4.2, z: -2.8, width: 1.95, depth: 0.85 },
-    { x: 4.2, z: -2.8, width: 0.85, depth: 1.95 },
+    { x: 4.2, z: -2.8, width: 1.95, depth: 0.85 },
   ];
 
   for (const bench of benches) {
@@ -214,6 +214,7 @@ function findPath(startX: number, startZ: number, endX: number, endZ: number): T
   simplified.push(reversed[reversed.length - 1]);
   return simplified;
 }
+
 /* -------------------------------------------------------
    MODELO 3D PROCEDIMENTAL - ESTILO MINIMUNDOS / AJUSTADO
 ------------------------------------------------------- */
@@ -245,9 +246,9 @@ function ProceduralAvatar({ config, walkingRef }: ProceduralAvatarProps) {
   const hairMat = useMemo(() => new THREE.MeshStandardMaterial({ color: "#8b2500", roughness: 0.7 }), []);
   const eyeMat = useMemo(() => new THREE.MeshStandardMaterial({ color: "#1a1a1a", roughness: 0.2 }), []);
   const glassesMat = useMemo(() => new THREE.MeshStandardMaterial({ color: "#e2e8f0", roughness: 0.1, metalness: 0.9, transparent: true, opacity: 0.8 }), []);
-  const topMat = useMemo(() => new THREE.MeshStandardMaterial({ color: config.topColor, roughness: 0.5 }, [config.topColor]);
-  const bottomMat = useMemo(() => new THREE.MeshStandardMaterial({ color: config.bottomColor, roughness: 0.5 }, [config.bottomColor]);
-  const shoeMat = useMemo(() => new THREE.MeshStandardMaterial({ color: config.shoesColor, roughness: 0.3 }, []);
+  const topMat = useMemo(() => new THREE.MeshStandardMaterial({ color: config.topColor, roughness: 0.5 }), [config.topColor]);
+  const bottomMat = useMemo(() => new THREE.MeshStandardMaterial({ color: config.bottomColor, roughness: 0.5 }), [config.bottomColor]);
+  const shoeMat = useMemo(() => new THREE.MeshStandardMaterial({ color: config.shoesColor, roughness: 0.3 }), []);
 
   return (
     <group position={[0, 0.65, 0]}>
@@ -261,7 +262,6 @@ function ProceduralAvatar({ config, walkingRef }: ProceduralAvatarProps) {
         <mesh material={hairMat}>
           <sphereGeometry args={[0.17, 16, 16]} />
         </mesh>
-        {/* Dreads / Tranças caindo para trás */}
         <mesh position={[0, 0.12, -0.04]} material={hairMat} rotation={[0.4, 0, 0]}>
           <capsuleGeometry args={[0.04, 0.2, 8, 8]} />
         </mesh>
@@ -273,7 +273,7 @@ function ProceduralAvatar({ config, walkingRef }: ProceduralAvatarProps) {
         </mesh>
       </group>
 
-      {/* ÓCULOS (Posicionados na frente da face, visíveis em rotação/diagonal) */}
+      {/* ÓCULOS */}
       <group position={[0, 0.58, 0.18]}>
         <mesh position={[-0.07, 0, 0]} material={glassesMat}>
           <boxGeometry args={[0.06, 0.035, 0.02]} />
@@ -335,6 +335,7 @@ function ProceduralAvatar({ config, walkingRef }: ProceduralAvatarProps) {
     </group>
   );
 }
+
 /* -------------------------------------------------------
    JOGADOR E MOVIMENTAÇÃO NATIVA (EXPORTAÇÃO DEFAULT)
 ------------------------------------------------------- */
