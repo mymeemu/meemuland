@@ -2,11 +2,11 @@
 
 import dynamic from "next/dynamic";
 
-const AvatarEditor3D = dynamic(
-  () => import("@/components/AvatarEditor3D"),
+const MeemuProfile = dynamic(
+  () => import("@/components/MeemuProfile"),
   { ssr: false }
 );
 
 export default function Home() {
-  return <AvatarEditor3D />;
+  return <MeemuProfile />;
 }
