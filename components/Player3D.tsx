@@ -216,7 +216,7 @@ function findPath(startX: number, startZ: number, endX: number, endZ: number): T
 }
 
 /* -------------------------------------------------------
-   MODELO 3D PROCEDIMENTAL SUAVE (SEM ARQUIVOS GLB)
+   MODELO 3D PROCEDIMENTAL REFINADO (ESTILO IMVU / COOEE)
 ------------------------------------------------------- */
 
 type ProceduralAvatarProps = {
@@ -232,7 +232,7 @@ function ProceduralAvatar({ config, walkingRef }: ProceduralAvatarProps) {
 
   useFrame((state) => {
     const walking = walkingRef.current;
-    const phase = state.clock.elapsedTime * 9;
+    const phase = state.clock.elapsedTime * 10;
     const swing = walking ? Math.sin(phase) * 0.45 : 0;
     const armSwing = walking ? Math.sin(phase) * 0.35 : 0;
 
@@ -242,229 +242,111 @@ function ProceduralAvatar({ config, walkingRef }: ProceduralAvatarProps) {
     if (rightArmRef.current) rightArmRef.current.rotation.x = armSwing;
   });
 
-  // Materiais suaves
-  const skinMat = useMemo(() => new THREE.MeshStandardMaterial({ color: config.skinColor, roughness: 0.4, flatShading: false }), [config.skinColor]);
-  const hairMat = useMemo(() => new THREE.MeshStandardMaterial({ color: config.hairColor, roughness: 0.6, flatShading: false }), [config.hairColor]);
-  const eyeMat = useMemo(() => new THREE.MeshStandardMaterial({ color: config.eyeColor, roughness: 0.2 }), [config.eyeColor]);
-  const topMat = useMemo(() => new THREE.MeshStandardMaterial({ color: config.topColor, roughness: 0.5, flatShading: false }), [config.topColor]);
-  const bottomMat = useMemo(() => new THREE.MeshStandardMaterial({ color: config.bottomColor, roughness: 0.5, flatShading: false }), [config.bottomColor]);
+  // Materiais com acabamento acetinado (efeito pele macia / soft matte)
+  const skinMat = useMemo(() => new THREE.MeshStandardMaterial({ color: config.skinColor, roughness: 0.5, metalness: 0.05, flatShading: false }), [config.skinColor]);
+  const hairMat = useMemo(() => new THREE.MeshStandardMaterial({ color: config.hairColor, roughness: 0.4, metalness: 0.1, flatShading: false }), [config.hairColor]);
+  const eyeMat = useMemo(() => new THREE.MeshStandardMaterial({ color: config.eyeColor, roughness: 0.1, metalness: 0.2 }), [config.eyeColor]);
+  const topMat = useMemo(() => new THREE.MeshStandardMaterial({ color: config.topColor, roughness: 0.6, flatShading: false }), [config.topColor]);
+  const bottomMat = useMemo(() => new THREE.MeshStandardMaterial({ color: config.bottomColor, roughness: 0.6, flatShading: false }), [config.bottomColor]);
   const shoeMat = useMemo(() => new THREE.MeshStandardMaterial({ color: config.shoesColor, roughness: 0.3 }), [config.shoesColor]);
 
   return (
     <group position={[0, 0.75, 0]}>
-      {/* CABEÇA ARREDONDADA */}
-      <mesh position={[0, 0.55, 0]} material={skinMat}>
-        <sphereGeometry args={[0.22, 32, 32]} />
+      {/* CABEÇA SUAVIZADA */}
+      <mesh position={[0, 0.56, 0]} material={skinMat}>
+        <sphereGeometry args={[0.2, 32, 32]} />
       </mesh>
 
-      {/* OLHOS */}
-      <mesh position={[-0.07, 0.58, 0.18]} material={eyeMat}>
-        <sphereGeometry args={[0.035, 16, 16]} />
-      </mesh>
-      <mesh position={[0.07, 0.58, 0.18]} material={eyeMat}>
-        <sphereGeometry args={[0.035, 16, 16]} />
+      {/* BEXECHAS / ROSTO DELICADO (Blush sutil simulado no volume) */}
+      <mesh position={[0, 0.5, 0.16]} material={skinMat}>
+        <sphereGeometry args={[0.13, 16, 16]} />
       </mesh>
 
-      {/* CABELO ANATÔMICO */}
-      {config.hairStyle === "long" && (
-        <group position={[0, 0.6, -0.02]}>
-          <mesh material={hairMat} position={[0, 0.05, 0]}>
-            <sphereGeometry args={[0.235, 32, 16, 0, Math.PI * 2, 0, Math.PI * 0.55]} />
-          </mesh>
-          <mesh material={hairMat} position={[-0.15, -0.2, 0.05]}>
-            <capsuleGeometry args={[0.06, 0.35, 16, 16]} />
-          </mesh>
-          <mesh material={hairMat} position={[0.15, -0.2, 0.05]}>
-            <capsuleGeometry args={[0.06, 0.35, 16, 16]} />
-          </mesh>
-        </group>
-      )}
+      {/* OLHOS EXPRESSIVOS */}
+      <mesh position={[-0.065, 0.58, 0.17]} material={eyeMat}>
+        <sphereGeometry args={[0.032, 16, 16]} />
+      </mesh>
+      <mesh position={[0.065, 0.58, 0.17]} material={eyeMat}>
+        <sphereGeometry args={[0.032, 16, 16]} />
+      </mesh>
 
-      {config.hairStyle === "short" && (
-        <mesh position={[0, 0.62, 0]} material={hairMat}>
-          <sphereGeometry args={[0.235, 32, 32, 0, Math.PI * 2, 0, Math.PI * 0.5]} />
+      {/* CABELO VOLUMOSO EM CAMADAS (Estilo Soft/Anime) */}
+      <group position={[0, 0.62, -0.01]}>
+        {/* Topo do cabelo */}
+        <mesh material={hairMat} position={[0, 0.04, 0]}>
+          <sphereGeometry args={[0.22, 32, 16, 0, Math.PI * 2, 0, Math.PI * 0.6]} />
         </mesh>
-      )}
+        {/* Mecha lateral esquerda */}
+        <mesh material={hairMat} position={[-0.14, -0.18, 0.06]} rotation={[0, 0, -0.15]}>
+          <capsuleGeometry args={[0.05, 0.3, 16, 16]} />
+        </mesh>
+        {/* Mecha lateral direita */}
+        <mesh material={hairMat} position={[0.14, -0.18, 0.06]} rotation={[0, 0, 0.15]}>
+          <capsuleGeometry args={[0.05, 0.3, 16, 16]} />
+        </mesh>
+        {/* Franja frontal */}
+        <mesh material={hairMat} position={[0, 0.12, 0.15]} rotation={[0.3, 0, 0]}>
+          <boxGeometry args={[0.22, 0.06, 0.08]} />
+        </mesh>
+      </group>
 
-      {/* TRONCO / ROUPA DE CIMA */}
-      <mesh position={[0, 0.15, 0]} material={topMat}>
-        <cylinderGeometry args={[0.16, 0.13, config.topStyle === "crop" ? 0.25 : 0.42, 32]} />
+      {/* PESCOÇO DELICADO */}
+      <mesh position={[0, 0.37, 0]} material={skinMat}>
+        <cylinderGeometry args={[0.05, 0.055, 0.08, 16]} />
+      </mesh>
+
+      {/* TRONCO / ROUPA COM CORTE MODERNO */}
+      <mesh position={[0, 0.12, 0]} material={topMat}>
+        <cylinderGeometry args={[0.14, 0.11, config.topStyle === "crop" ? 0.23 : 0.4, 32]} />
       </mesh>
 
       {/* BRAÇO ESQUERDO */}
-      <group ref={leftArmRef} position={[-0.22, 0.3, 0]}>
-        <mesh position={[0, -0.15, 0]} material={topMat}>
-          <capsuleGeometry args={[0.045, 0.28, 16, 16]} />
+      <group ref={leftArmRef} position={[-0.2, 0.28, 0]}>
+        <mesh position={[0, -0.14, 0]} material={topMat}>
+          <capsuleGeometry args={[0.038, 0.26, 16, 16]} />
         </mesh>
-        <mesh position={[0, -0.32, 0]} material={skinMat}>
-          <sphereGeometry args={[0.04, 16, 16]} />
+        <mesh position={[0, -0.3, 0]} material={skinMat}>
+          <sphereGeometry args={[0.035, 16, 16]} />
         </mesh>
       </group>
 
       {/* BRAÇO DIREITO */}
-      <group ref={rightArmRef} position={[0.22, 0.3, 0]}>
-        <mesh position={[0, -0.15, 0]} material={topMat}>
-          <capsuleGeometry args={[0.045, 0.28, 16, 16]} />
+      <group ref={rightArmRef} position={[0.2, 0.28, 0]}>
+        <mesh position={[0, -0.14, 0]} material={topMat}>
+          <capsuleGeometry args={[0.038, 0.26, 16, 16]} />
         </mesh>
-        <mesh position={[0, -0.32, 0]} material={skinMat}>
-          <sphereGeometry args={[0.04, 16, 16]} />
+        <mesh position={[0, -0.3, 0]} material={skinMat}>
+          <sphereGeometry args={[0.035, 16, 16]} />
         </mesh>
       </group>
 
       {/* PERNA ESQUERDA */}
-      <group ref={leftLegRef} position={[-0.09, -0.1, 0]}>
+      <group ref={leftLegRef} position={[-0.08, -0.12, 0]}>
         <mesh position={[0, -0.18, 0]} material={bottomMat}>
-          <capsuleGeometry args={[0.055, config.bottomStyle === "pants" ? 0.42 : 0.2, 16, 16]} />
+          <capsuleGeometry args={[0.048, config.bottomStyle === "pants" ? 0.4 : 0.18, 16, 16]} />
         </mesh>
-        <mesh position={[0, -0.42, 0]} material={skinMat}>
-          <capsuleGeometry args={[0.048, 0.2, 16, 16]} />
+        <mesh position={[0, -0.41, 0]} material={skinMat}>
+          <capsuleGeometry args={[0.04, 0.18, 16, 16]} />
         </mesh>
-        {/* Sapato */}
-        <mesh position={[0, -0.55, 0.03]} material={shoeMat}>
-          <boxGeometry args={[0.09, 0.07, 0.15]} />
+        {/* Tênis / Sapato Estilizado */}
+        <mesh position={[0, -0.53, 0.02]} material={shoeMat}>
+          <boxGeometry args={[0.08, 0.06, 0.14]} />
         </mesh>
       </group>
 
       {/* PERNA DIREITA */}
-      <group ref={rightLegRef} position={[0.09, -0.1, 0]}>
+      <group ref={rightLegRef} position={[0.08, -0.12, 0]}>
         <mesh position={[0, -0.18, 0]} material={bottomMat}>
-          <capsuleGeometry args={[0.055, config.bottomStyle === "pants" ? 0.42 : 0.2, 16, 16]} />
+          <capsuleGeometry args={[0.048, config.bottomStyle === "pants" ? 0.4 : 0.18, 16, 16]} />
         </mesh>
-        <mesh position={[0, -0.42, 0]} material={skinMat}>
-          <capsuleGeometry args={[0.048, 0.2, 16, 16]} />
+        <mesh position={[0, -0.41, 0]} material={skinMat}>
+          <capsuleGeometry args={[0.04, 0.18, 16, 16]} />
         </mesh>
-        {/* Sapato */}
-        <mesh position={[0, -0.55, 0.03]} material={shoeMat}>
-          <boxGeometry args={[0.09, 0.07, 0.15]} />
+        {/* Tênis / Sapato Estilizado */}
+        <mesh position={[0, -0.53, 0.02]} position-z={0.02} material={shoeMat}>
+          <boxGeometry args={[0.08, 0.06, 0.14]} />
         </mesh>
       </group>
     </group>
-  );
-}
-
-/* -------------------------------------------------------
-   JOGADOR E MOVIMENTAÇÃO NATIVA
-------------------------------------------------------- */
-
-export default function Player3D() {
-  const playerRef = useRef<THREE.Group>(null);
-  const bodyRef = useRef<THREE.Group>(null);
-
-  const pathRef = useRef<THREE.Vector3[]>([]);
-  const pathIndexRef = useRef(0);
-  const walkingRef = useRef(false);
-
-  const [target, setTarget] = useState<[number, number, number] | null>(null);
-  const [avatarConfig, setAvatarConfig] = useState<AvatarConfig>(defaultConfig);
-
-  // Carrega configuração salva
-  useEffect(() => {
-    const saved = localStorage.getItem("meemu_avatar_config");
-    if (saved) {
-      try {
-        setAvatarConfig(JSON.parse(saved));
-      } catch (e) {
-        console.error("Erro ao carregar avatarConfig", e);
-      }
-    }
-  }, []);
-
-  const direction = useRef(new THREE.Vector3());
-  const speed = 2.8;
-
-  useFrame((state, delta) => {
-    if (!playerRef.current) return;
-
-    const player = playerRef.current;
-    const path = pathRef.current;
-    const currentPoint = path[pathIndexRef.current];
-
-    if (currentPoint) {
-      direction.current.subVectors(currentPoint, player.position);
-      direction.current.y = 0;
-
-      const distance = direction.current.length();
-
-      if (distance > 0.07) {
-        walkingRef.current = true;
-        direction.current.normalize();
-
-        player.position.addScaledVector(direction.current, Math.min(speed * delta, distance));
-
-        const angle = Math.atan2(direction.current.x, direction.current.z);
-        player.rotation.y = THREE.MathUtils.damp(player.rotation.y, angle, 9, delta);
-
-        if (bodyRef.current) {
-          const walking = state.clock.elapsedTime * 9;
-          bodyRef.current.position.y = Math.abs(Math.sin(walking * 2)) * 0.018;
-        }
-      } else {
-        player.position.x = currentPoint.x;
-        player.position.z = currentPoint.z;
-
-        pathIndexRef.current++;
-
-        if (pathIndexRef.current >= path.length) {
-          pathRef.current = [];
-          pathIndexRef.current = 0;
-          walkingRef.current = false;
-          setTarget(null);
-        }
-      }
-    } else {
-      walkingRef.current = false;
-      if (bodyRef.current) bodyRef.current.position.y = 0;
-    }
-  });
-
-  function handleGroundClick(event: { stopPropagation: () => void; point: THREE.Vector3 }) {
-    event.stopPropagation();
-    const point = event.point;
-
-    const newPath = findPath(
-      playerRef.current?.position.x ?? 0,
-      playerRef.current?.position.z ?? 2,
-      point.x,
-      point.z
-    );
-
-    if (newPath.length === 0) return;
-
-    pathRef.current = newPath;
-    pathIndexRef.current = 0;
-
-    const destination = newPath[newPath.length - 1];
-    setTarget([destination.x, 0.075, destination.z]);
-  }
-
-  return (
-    <>
-      {/* Área clicável do chão */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.055, 0]} onClick={handleGroundClick}>
-        <planeGeometry args={[21.5, 21.5]} />
-        <meshBasicMaterial transparent opacity={0} depthWrite={false} side={THREE.DoubleSide} />
-      </mesh>
-
-      {/* Marcador de destino */}
-      {target && (
-        <group position={[target[0], target[1], target[2]]}>
-          <mesh rotation={[-Math.PI / 2, 0, 0]}>
-            <ringGeometry args={[0.22, 0.29, 32]} />
-            <meshBasicMaterial color="#635bff" />
-          </mesh>
-          <mesh rotation={[-Math.PI / 2, 0, 0]}>
-            <ringGeometry args={[0.34, 0.37, 32]} />
-            <meshBasicMaterial color="#a99cff" transparent opacity={0.45} />
-          </mesh>
-        </group>
-      )}
-
-      {/* Jogador Procedimental 3D */}
-      <group ref={playerRef} position={[0, 0.08, 2]}>
-        <group ref={bodyRef}>
-          <ProceduralAvatar config={avatarConfig} walkingRef={walkingRef} />
-        </group>
-      </group>
-    </>
   );
 }
